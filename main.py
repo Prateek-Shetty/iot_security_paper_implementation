@@ -1,23 +1,20 @@
 from src.data_loader import load_data
 from src.preprocessing import preprocess
-from src.client import create_clients, train_client
+from src.client import create_clients
+from src.federated import federated_training
 
-# Load data
+# LOAD DATA
 df = load_data()
 
-# Preprocess
+# PREPROCESS
 X, y = preprocess(df)
 
-# Create clients
+# CREATE CLIENTS
 clients = create_clients(X, y, num_clients=10)
 
 print("Clients created:", len(clients))
 
-# Train locally
-models = []
+# FEDERATED TRAINING
+global_model = federated_training(clients, rounds=5)
 
-for X_c, y_c in clients:
-    model = train_client(X_c, y_c)
-    models.append(model)
-
-print("Local training complete")
+print("✅ Federated Learning Completed")
