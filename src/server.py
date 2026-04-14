@@ -4,27 +4,20 @@ import numpy as np
 # ==============================
 # HADA WEIGHT CALCULATION (FIXED)
 # ==============================
-def compute_hada_weights(shap_scores, epsilons, tau=1.0, beta=1e-5):
-    """
-    Improved HADA weighting
-
-    Fixes:
-    - Stronger SHAP influence
-    - Better separation between clients
-    """
+def compute_hada_weights(shap_scores, epsilons, tau=0.5, beta=1e-5):
 
     shap_scores = np.array(shap_scores)
     epsilons = np.array(epsilons)
 
-    # 🔥 normalize SHAP scores
+    # normalize SHAP
     shap_scores = (shap_scores - np.min(shap_scores)) / (
         np.max(shap_scores) - np.min(shap_scores) + 1e-8
     )
 
-    # 🔥 stronger weighting (square effect)
-    weights = (shap_scores ** 2) / (epsilons + beta)
+    # 🔥 add small variation boost
+    weights = shap_scores / (epsilons + beta)
 
-    # exponential scaling (paper idea)
+    # 🔥 mild exponential (not too strong)
     weights = np.exp(tau * weights)
 
     # normalize
