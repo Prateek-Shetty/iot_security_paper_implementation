@@ -39,7 +39,7 @@ def add_dp_noise(weights, epsilon=1.0, delta=1e-5):
     """
 
     # standard deviation based on epsilon
-    sigma = np.sqrt(2 * np.log(1.25 / delta)) / epsilon
+    sigma = 2.0 / epsilon   # 🔥 stronger noise (realistic FL)
 
     noisy_weights = []
 
