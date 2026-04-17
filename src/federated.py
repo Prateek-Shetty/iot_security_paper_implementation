@@ -1,21 +1,23 @@
 import numpy as np
+import time
 from src.client import train_client, get_model_weights
 from src.shap_selection import compute_shap_values, compute_shap_stability
 from src.dp import apply_differential_privacy
-from src.server import hada_aggregation, compute_hada_weights  # 🔥 added
+from src.server import hada_aggregation, compute_hada_weights
 
 
-# ==============================
-# FEDERATED TRAINING LOOP (PAPER)
-# ==============================
-def federated_training(clients, rounds=5, epsilon=1.0):
+def federated_training(clients, rounds=5, epsilon=1.0, X_test=None, y_test=None):
 
     print("\n🚀 Starting Federated Learning (FL + SHAP + DP)...")
 
     local_models = []
+    convergence_acc = []
+    latency_list = []   # 🔥 NEW
 
     for r in range(rounds):
         print(f"\n🔁 Round {r+1}/{rounds}")
+
+        round_start = time.time()   # 🔥 START TIME
 
         local_models = []
         local_weights = []
@@ -31,30 +33,42 @@ def federated_training(clients, rounds=5, epsilon=1.0):
 
             weights = get_model_weights(model)
 
-            # SHAP
             shap_values = compute_shap_values(model, X[:1000])
-
             if isinstance(shap_values, list):
                 shap_values = shap_values[0]
 
             stability = compute_shap_stability(shap_values)
 
-            # DP
             weights = apply_differential_privacy([weights], epsilon)[0]
 
             local_weights.append(weights)
             shap_scores.append(stability)
             epsilons.append(epsilon)
 
-        # HADA aggregation
+        # simulate latency (50ms per client)
+        time.sleep(0.05 * len(clients))
+
         global_weights = hada_aggregation(local_weights, shap_scores, epsilons)
 
+        round_time = time.time() - round_start
+        latency_list.append(round_time)
+
+        print(f"⏱️ Round Latency: {round_time:.3f} sec")
         print("✅ HADA aggregation complete")
+
+        # convergence tracking
+        if X_test is not None and y_test is not None:
+            from sklearn.metrics import accuracy_score
+
+            preds = federated_predict(local_models, X_test, shap_scores, epsilons)
+            acc = accuracy_score(y_test, preds)
+
+            convergence_acc.append(acc)
+            print(f"📈 Round {r+1} Accuracy: {acc*100:.2f}%")
 
     print("\n🎉 Federated Learning Completed")
 
-    # 🔥 FIX: return shap + epsilon also
-    return local_models, shap_scores, epsilons
+    return local_models, shap_scores, epsilons, convergence_acc, latency_list
 
 
 # ==============================

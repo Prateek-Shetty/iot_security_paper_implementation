@@ -47,6 +47,54 @@ def create_clients(X, y, num_clients=5, shuffle=True):
     return clients
 
 # ==============================
+# DIRICHLET NON-IID SPLIT (PAPER)
+# ==============================
+def create_clients_dirichlet(X, y, num_clients=5, alpha=0.3):
+
+    print(f"📡 Creating clients using Dirichlet α={alpha}")
+
+    if hasattr(y, "values"):
+        y = y.values
+
+    num_classes = len(np.unique(y))
+    data_size = len(X)
+
+    # indices per class
+    class_indices = [np.where(y == i)[0] for i in range(num_classes)]
+
+    client_indices = [[] for _ in range(num_clients)]
+
+    for c in range(num_classes):
+        np.random.shuffle(class_indices[c])
+
+        proportions = np.random.dirichlet(alpha * np.ones(num_clients))
+
+        proportions = (proportions / proportions.sum()) * len(class_indices[c])
+        proportions = proportions.astype(int)
+
+        start = 0
+        for i in range(num_clients):
+            end = start + proportions[i]
+            client_indices[i].extend(class_indices[c][start:end])
+            start = end
+
+    clients = []
+
+    for i in range(num_clients):
+        idx = np.array(client_indices[i])
+        np.random.shuffle(idx)
+
+        clients.append({
+            "id": i,
+            "X": X[idx],
+            "y": y[idx]
+        })
+
+    print(f"✅ {len(clients)} clients created (Dirichlet NON-IID)")
+
+    return clients
+
+# ==============================
 # LOCAL TRAINING (CLEANED)
 # ==============================
 def train_client(X, y):
