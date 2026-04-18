@@ -120,9 +120,9 @@ def create_clients_dirichlet(X, y, num_clients=5, alpha=0.3):
 def train_client(X, y):
 
     model = LGBMClassifier(
-        n_estimators=100,
+        n_estimators=180,
         max_depth=6,
-        learning_rate=0.1,
+        learning_rate=0.07,
         class_weight="balanced",
         verbosity=-1
     )
