@@ -1,6 +1,7 @@
 import numpy as np
 from lightgbm import LGBMClassifier
-
+from lightgbm import LGBMClassifier
+import lightgbm as lgb
 # ==============================
 # CREATE CLIENTS (NON-IID FIXED)
 # ==============================
@@ -116,14 +117,22 @@ def create_clients_dirichlet(X, y, num_clients=5, alpha=0.3):
 def train_client(X, y):
 
     model = LGBMClassifier(
-        n_estimators=60,    #40
-        max_depth=6,        #5
+        n_estimators=100,
+        max_depth=6,
         learning_rate=0.1,
         class_weight="balanced",
         verbosity=-1
     )
 
-    model.fit(X, y)
+    model.fit(
+        X, y,
+        eval_set=[(X, y)],
+        eval_metric="logloss",
+        callbacks=[
+            lgb.early_stopping(stopping_rounds=10),
+            lgb.log_evaluation(0)  # suppress logs
+        ]
+    )
 
     return model
 
