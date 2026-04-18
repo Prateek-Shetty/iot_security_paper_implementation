@@ -97,7 +97,10 @@ def create_clients_dirichlet(X, y, num_clients=5, alpha=0.3):
     clients = []
 
     for i in range(num_clients):
-        idx = np.array(client_indices[i])
+        # idx = np.array(client_indices[i])
+        idx = np.array(client_indices[i], dtype=int)
+        if len(idx) == 0:
+          continue
         np.random.shuffle(idx)
 
         clients.append({

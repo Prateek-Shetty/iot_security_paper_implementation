@@ -83,7 +83,7 @@ def main():
 
     models_no_energy, shap_no, eps_no, _, _, energies_no = federated_training(
         clients,
-        rounds=3,
+        rounds=5,
         epsilon=1.0,
         X_test=X_test,
         y_test=y_test
@@ -115,7 +115,7 @@ def main():
 
     full_models, shap_scores, epsilons, convergence_acc, latency_list, energies = federated_training(
         clients,
-        rounds=3,
+        rounds=5,
         epsilon=1.0,
         X_test=X_test,
         y_test=y_test
@@ -170,7 +170,7 @@ def main():
 
         models_eps, shap_eps, eps_list, _, _, energies_eps = federated_training(
             clients_eps,
-            rounds=3,
+            rounds=5,
             epsilon=eps
         )
 
@@ -245,7 +245,7 @@ def main():
 
         models_alpha, shap_alpha, eps_alpha, _, _, energies_alpha = federated_training(
             clients_alpha,
-            rounds=3,
+            rounds=5,
             epsilon=1.0
         )
 
