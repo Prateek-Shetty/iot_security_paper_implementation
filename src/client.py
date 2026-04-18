@@ -43,6 +43,9 @@ def create_clients(X, y, num_clients=5, shuffle=True):
         class_balance = np.mean(y_np[indices])
 
         energy = 50 + (data_size / len(X)) * 40 + (class_balance * 10)
+        noise = np.random.uniform(0.5, 1.5)
+        energy = energy * noise
+        
 
         # ==============================
         # CLIENT OBJECT

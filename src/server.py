@@ -40,6 +40,11 @@ def compute_hada_weights(shap_scores, epsilons, energies, tau=1.0, beta=1e-5):
         np.max(energies) - np.min(energies) + 1e-8
     )
 
+    # weights = energies ** 4
+    # weights += 0.1 * shap_scores
+    # weights = np.exp( weights)
+    # weights = weights / np.sum(weights)
+
     # 🔥 COMBINE SHAP + ENERGY
     weights = (shap_scores * 0.3 + energies * 0.7) / (epsilons + beta)
     weights=weights ** 2
