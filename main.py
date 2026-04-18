@@ -145,7 +145,7 @@ def main():
     print(f"Centralized         → Acc: {acc_central*100:.2f}% | F1: {f1_central:.4f}")
     print(f"FL                  → Acc: {acc_fl*100:.2f}% | F1: {f1_fl:.4f}")
     print(f"FL+SHAP+DP          → Acc: {acc_no_energy*100:.2f}% | F1: {f1_no_energy:.4f}")
-    print(f"FL+SHAP+DP+ENERGY   → Acc: {acc_full*100:.2f}% | F1: {f1_full:.4f}")
+    print(f"ENERGY              → Acc: {acc_full*100:.2f}% | F1: {f1_full:.4f}")
 
     # ==============================
     # GRAPH 1: ACCURACY vs EPSILON
