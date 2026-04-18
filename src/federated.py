@@ -54,7 +54,7 @@ def federated_training(clients, rounds=5, epsilon=1.0, X_test=None, y_test=None)
         # ==============================
         # 🔥 CLIENT SELECTION (NEW)
         # ==============================
-        selected_clients = select_top_clients(clients, fraction=0.7)
+        selected_clients = select_top_clients(clients, fraction=0.8)
 
         print(f"👥 Selected {len(selected_clients)}/{len(clients)} clients")
 

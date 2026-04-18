@@ -24,35 +24,62 @@ import numpy as np
 #     weights = weights / np.sum(weights)
 
 #     return weights
+import numpy as np
+
 def compute_hada_weights(shap_scores, epsilons, energies, tau=1.0, beta=1e-5):
 
     shap_scores = np.array(shap_scores)
     epsilons = np.array(epsilons)
     energies = np.array(energies)
 
-    # normalize SHAP
+    # ==============================
+    # NORMALIZE SHAP
+    # ==============================
     shap_scores = (shap_scores - np.min(shap_scores)) / (
         np.max(shap_scores) - np.min(shap_scores) + 1e-8
     )
 
-    # normalize ENERGY
+    # ==============================
+    # NORMALIZE ENERGY
+    # ==============================
     energies = (energies - np.min(energies)) / (
         np.max(energies) - np.min(energies) + 1e-8
     )
 
-    # weights = energies ** 4
-    # weights += 0.1 * shap_scores
-    # weights = np.exp( weights)
-    # weights = weights / np.sum(weights)
+    # ==============================
+    # 🔥 FIX: SOFT ENERGY INFLUENCE
+    # ==============================
+    # convert energy to "efficiency"
+    energy_eff = 1 / (energies + 1e-6)
 
-    # 🔥 COMBINE SHAP + ENERGY
-    weights = (shap_scores * 0.3 + energies * 0.7) / (epsilons + beta)
-    weights=weights ** 2
+    # normalize again
+    energy_eff = (energy_eff - np.min(energy_eff)) / (
+        np.max(energy_eff) - np.min(energy_eff) + 1e-8
+    )
+
+    # ==============================
+    # 🔥 BETTER COMBINATION
+    # ==============================
+    # SHAP dominates, energy assists
+    weights = (0.7 * shap_scores + 0.3 * energy_eff)
+
+    # ==============================
+    # PRIVACY ADJUSTMENT
+    # ==============================
+    weights = weights / (epsilons + beta)
+
+    # ==============================
+    # STABILIZATION (SOFTEN SHARPNESS)
+    # ==============================
+    weights = np.power(weights, 1.5)
+
+    # ==============================
+    # SOFTMAX NORMALIZATION
+    # ==============================
     weights = np.exp(tau * weights)
     weights = weights / np.sum(weights)
 
     return weights
-
 
 # ==============================
 # HADA AGGREGATION
