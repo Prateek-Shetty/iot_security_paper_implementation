@@ -4,23 +4,46 @@ import numpy as np
 # ==============================
 # HADA WEIGHT CALCULATION (FIXED)
 # ==============================
-def compute_hada_weights(shap_scores, epsilons, tau=0.5, beta=1e-5):
+# def compute_hada_weights(shap_scores, epsilons, tau=0.5, beta=1e-5):
+
+#     shap_scores = np.array(shap_scores)
+#     epsilons = np.array(epsilons)
+
+#     # normalize SHAP
+#     shap_scores = (shap_scores - np.min(shap_scores)) / (
+#         np.max(shap_scores) - np.min(shap_scores) + 1e-8
+#     )
+
+#     # 🔥 add small variation boost
+#     weights = shap_scores / (epsilons + beta)
+
+#     # 🔥 mild exponential (not too strong)
+#     weights = np.exp(tau * weights)
+
+#     # normalize
+#     weights = weights / np.sum(weights)
+
+#     return weights
+def compute_hada_weights(shap_scores, epsilons, energies, tau=1.0, beta=1e-5):
 
     shap_scores = np.array(shap_scores)
     epsilons = np.array(epsilons)
+    energies = np.array(energies)
 
     # normalize SHAP
     shap_scores = (shap_scores - np.min(shap_scores)) / (
         np.max(shap_scores) - np.min(shap_scores) + 1e-8
     )
 
-    # 🔥 add small variation boost
-    weights = shap_scores / (epsilons + beta)
+    # normalize ENERGY
+    energies = (energies - np.min(energies)) / (
+        np.max(energies) - np.min(energies) + 1e-8
+    )
 
-    # 🔥 mild exponential (not too strong)
+    # 🔥 COMBINE SHAP + ENERGY
+    weights = (shap_scores * 0.3 + energies * 0.7) / (epsilons + beta)
+    weights=weights ** 2
     weights = np.exp(tau * weights)
-
-    # normalize
     weights = weights / np.sum(weights)
 
     return weights
@@ -29,9 +52,9 @@ def compute_hada_weights(shap_scores, epsilons, tau=0.5, beta=1e-5):
 # ==============================
 # HADA AGGREGATION
 # ==============================
-def hada_aggregation(local_weights, shap_scores, epsilons):
+def hada_aggregation(local_weights, shap_scores, epsilons, energies):
 
-    weights = compute_hada_weights(shap_scores, epsilons)
+    weights = compute_hada_weights(shap_scores, epsilons, energies)
 
     global_weights = np.zeros_like(local_weights[0])
 

@@ -1,7 +1,6 @@
 import numpy as np
 from lightgbm import LGBMClassifier
 
-
 # ==============================
 # CREATE CLIENTS (NON-IID FIXED)
 # ==============================
@@ -32,14 +31,27 @@ def create_clients(X, y, num_clients=5, shuffle=True):
     c1_chunks = np.array_split(idx_class1, num_clients)
 
     for i in range(num_clients):
-        # 🔥 mix both classes (IMPORTANT)
+
+        # mix both classes
         indices = np.concatenate([c0_chunks[i], c1_chunks[i]])
         np.random.shuffle(indices)
 
+        # ==============================
+        # 🔥 ENERGY CALCULATION (FIXED)
+        # ==============================
+        data_size = len(indices)
+        class_balance = np.mean(y_np[indices])
+
+        energy = 50 + (data_size / len(X)) * 40 + (class_balance * 10)
+
+        # ==============================
+        # CLIENT OBJECT
+        # ==============================
         clients.append({
             "id": i,
             "X": X[indices],
-            "y": y_np[indices]
+            "y": y_np[indices],
+            "energy": energy
         })
 
     print(f"✅ {len(clients)} clients created (BALANCED NON-IID)")
@@ -87,7 +99,8 @@ def create_clients_dirichlet(X, y, num_clients=5, alpha=0.3):
         clients.append({
             "id": i,
             "X": X[idx],
-            "y": y[idx]
+            "y": y[idx],
+            "energy": np.random.uniform(10, 100)
         })
 
     print(f"✅ {len(clients)} clients created (Dirichlet NON-IID)")
@@ -100,8 +113,8 @@ def create_clients_dirichlet(X, y, num_clients=5, alpha=0.3):
 def train_client(X, y):
 
     model = LGBMClassifier(
-        n_estimators=40,
-        max_depth=5,
+        n_estimators=60,    #40
+        max_depth=6,        #5
         learning_rate=0.1,
         class_weight="balanced",
         verbosity=-1

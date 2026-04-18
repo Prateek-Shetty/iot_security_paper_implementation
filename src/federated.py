@@ -10,19 +10,19 @@ def federated_training(clients, rounds=5, epsilon=1.0, X_test=None, y_test=None)
 
     print("\n🚀 Starting Federated Learning (FL + SHAP + DP)...")
 
-    local_models = []
     convergence_acc = []
-    latency_list = []   # 🔥 NEW
+    latency_list = []
 
     for r in range(rounds):
         print(f"\n🔁 Round {r+1}/{rounds}")
 
-        round_start = time.time()   # 🔥 START TIME
+        round_start = time.time()
 
         local_models = []
         local_weights = []
         shap_scores = []
         epsilons = []
+        energies = []
 
         for client in clients:
             X = client["X"]
@@ -31,24 +31,39 @@ def federated_training(clients, rounds=5, epsilon=1.0, X_test=None, y_test=None)
             model = train_client(X, y)
             local_models.append(model)
 
+            # 🔥 collect energy
+            energies.append(client.get("energy", 1.0))
+
             weights = get_model_weights(model)
 
+            # SHAP
             shap_values = compute_shap_values(model, X[:1000])
             if isinstance(shap_values, list):
                 shap_values = shap_values[0]
 
             stability = compute_shap_stability(shap_values)
 
+            # DP
             weights = apply_differential_privacy([weights], epsilon)[0]
 
             local_weights.append(weights)
             shap_scores.append(stability)
             epsilons.append(epsilon)
 
-        # simulate latency (50ms per client)
+        # simulate latency
         time.sleep(0.05 * len(clients))
 
-        global_weights = hada_aggregation(local_weights, shap_scores, epsilons)
+        if len(local_models) == 0:
+            print("⚠️ All clients skipped (low energy)")
+            continue
+
+        # 🔥 aggregation with energy
+        global_weights = hada_aggregation(
+            local_weights,
+            shap_scores,
+            epsilons,
+            energies
+        )
 
         round_time = time.time() - round_start
         latency_list.append(round_time)
@@ -56,25 +71,34 @@ def federated_training(clients, rounds=5, epsilon=1.0, X_test=None, y_test=None)
         print(f"⏱️ Round Latency: {round_time:.3f} sec")
         print("✅ HADA aggregation complete")
 
-        # convergence tracking
+        # ==============================
+        # CONVERGENCE TRACKING
+        # ==============================
         if X_test is not None and y_test is not None:
             from sklearn.metrics import accuracy_score
 
-            preds = federated_predict(local_models, X_test, shap_scores, epsilons)
-            acc = accuracy_score(y_test, preds)
+            preds = federated_predict(
+                local_models,
+                X_test,
+                shap_scores,
+                epsilons,
+                energies   # 🔥 FIXED (always passed)
+            )
 
+            acc = accuracy_score(y_test, preds)
             convergence_acc.append(acc)
+
             print(f"📈 Round {r+1} Accuracy: {acc*100:.2f}%")
 
     print("\n🎉 Federated Learning Completed")
 
-    return local_models, shap_scores, epsilons, convergence_acc, latency_list
+    return local_models, shap_scores, epsilons, convergence_acc, latency_list, energies
 
 
 # ==============================
 # FEDERATED PREDICTION (FIXED)
 # ==============================
-def federated_predict(models, X, shap_scores=None, epsilons=None):
+def federated_predict(models, X, shap_scores=None, epsilons=None, energies=None):
 
     probs = []
 
@@ -94,9 +118,15 @@ def federated_predict(models, X, shap_scores=None, epsilons=None):
         return (avg_prob > 0.5).astype(int)
 
     # ==============================
-    # 🔥 HADA WEIGHTED PREDICTION
+    # 🔥 SAFETY FIX (prevents crash)
     # ==============================
-    weights = compute_hada_weights(shap_scores, epsilons)
+    if energies is None:
+        energies = np.ones(len(shap_scores))
+
+    # ==============================
+    # HADA + ENERGY WEIGHTED
+    # ==============================
+    weights = compute_hada_weights(shap_scores, epsilons, energies)
 
     weighted_probs = np.zeros(len(X))
 
