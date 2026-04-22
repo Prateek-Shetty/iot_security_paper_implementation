@@ -54,7 +54,7 @@ def main():
     # ==============================
     print("\n🟢 BASIC FEDERATED LEARNING")
 
-    clients = create_clients(X_train, y_train, num_clients=5)
+    clients = create_clients(X_train, y_train, num_clients=100)
 
     fl_models = []
     for client in clients:
